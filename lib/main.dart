@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Программаны портрет режиминде иштетүү
+  // zapuskat programmu v rejime portreta
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   final cameras = await availableCameras();
   runApp(MyApp(camera: cameras.first));
@@ -63,10 +63,9 @@ class _CameraScreenState extends State<CameraScreen> {
         future: _initializeControllerFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
-            // Эгер камера кыйшак ачылып жатса, quarterTurns параметрин өзгөртүңүз.
             return RotatedBox(
               quarterTurns:
-                  0, // Эгер 90 градуска кыйшак болсо, quarterTurns: 1 же 3 колдонуп көрүңүз
+                  0, // tut nujno poprobovat 1,3 esli budet oshibka s kameroi
               child: CameraPreview(_controller),
             );
           } else {
@@ -92,7 +91,7 @@ class _CardDetectorScreenState extends State<CardDetectorScreen> {
   late Future<void> _initializeControllerFuture;
   bool isCardDetected = false;
   Timer? _timer;
-  // GlobalKey менен капталган RepaintBoundary аркылуу экран сүрөтүн тартып анализдейбиз
+
   GlobalKey _previewContainerKey = GlobalKey();
 
   @override
@@ -103,7 +102,6 @@ class _CardDetectorScreenState extends State<CardDetectorScreen> {
       if (mounted) setState(() {});
     });
 
-    // Ар 500 мс сайын экрандагы аймакты анализдеп, документ туура жайгашканын текшеребиз
     _timer = Timer.periodic(Duration(milliseconds: 500), (timer) {
       captureAndAnalyze();
     });
@@ -116,13 +114,12 @@ class _CardDetectorScreenState extends State<CardDetectorScreen> {
     super.dispose();
   }
 
-  // RepaintBoundary аркылуу скриншот тартып, аны анализдеп, isCardDetected абалын жаңыртат
   Future<void> captureAndAnalyze() async {
     try {
       RenderRepaintBoundary boundary =
           _previewContainerKey.currentContext?.findRenderObject()
               as RenderRepaintBoundary;
-      // Сүрөттү тартып алуу
+
       ui.Image image = await boundary.toImage(pixelRatio: 1.0);
       ByteData? byteData = await image.toByteData(
         format: ui.ImageByteFormat.png,
@@ -133,26 +130,23 @@ class _CardDetectorScreenState extends State<CardDetectorScreen> {
         });
         return;
       }
-      // Бул жерде сурөттү кайра өзгөртүүдөн өтсөк да болот,
-      // бирок демо максатында жөнөкөй анализ жүргүзүп, 50% учурларда документ аныкталат.
+
       bool detected = analyzeImage();
       setState(() {
         isCardDetected = detected;
       });
     } catch (e) {
-      print("Сүрөт тартып анализдөөдө ката: $e");
+      print("Analizing photo error: $e");
       setState(() {
         isCardDetected = false;
       });
     }
   }
 
-  // Симуляцияланган анализ – 50% ыкма менен true кайтарат.
   bool analyzeImage() {
     return Random().nextBool();
   }
 
-  // Акыркы сүрөттү тартып алуу функциясы, кнопкага басылган учурда аткарылат.
   Future<void> captureFinalImage() async {
     try {
       RenderRepaintBoundary boundary =
@@ -163,14 +157,12 @@ class _CardDetectorScreenState extends State<CardDetectorScreen> {
         format: ui.ImageByteFormat.png,
       );
       if (byteData == null) return;
-      // Бул жерде сүрөттү сактоо же серверге жиберүү иштери аткарылышы мүмкүн.
-      // Демо катары, диалог терезеде билдиребиз.
       showDialog(
         context: context,
         builder:
             (_) => AlertDialog(
-              title: Text("Сүрөт тартып алынды"),
-              content: Text("Сүрөт ийгиликтүү тартып алынды."),
+              title: Text("The photo is taken"),
+              content: Text("Photo is taken successfully"),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
@@ -180,13 +172,12 @@ class _CardDetectorScreenState extends State<CardDetectorScreen> {
             ),
       );
     } catch (e) {
-      print("Акыркы сүрөттү тартып алууда ката: $e");
+      print("error while taking a last photo $e");
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Экран туурасынын 80% ээсин колдонуңуз жана анын пропорциясы 0.65 катары эсептелет.
     final screenWidth = MediaQuery.of(context).size.width;
     final rectangleWidth = screenWidth * 0.8;
     final rectangleHeight = rectangleWidth * 0.65;
@@ -199,13 +190,11 @@ class _CardDetectorScreenState extends State<CardDetectorScreen> {
           if (snapshot.connectionState == ConnectionState.done) {
             return Stack(
               children: [
-                // Камеранын алдын ала көрүнүшү RepaintBoundary менен капталат,
-                // андан скриншот тартып анализ жүргүзөбүз.
                 RepaintBoundary(
                   key: _previewContainerKey,
                   child: CameraPreview(_controller),
                 ),
-                // Жогорку тексттер
+
                 Positioned(
                   top: 20,
                   left: 0,
@@ -213,18 +202,18 @@ class _CardDetectorScreenState extends State<CardDetectorScreen> {
                   child: Column(
                     children: [
                       Text(
-                        "Документти туура жайгаштырыңыз...",
+                        "position the document correctly...",
                         style: TextStyle(color: Colors.white, fontSize: 18),
                       ),
                       SizedBox(height: 10),
                       Text(
-                        "Түзмөктү тынч кармаңыз",
+                        "Hold the device steady",
                         style: TextStyle(color: Colors.white, fontSize: 14),
                       ),
                     ],
                   ),
                 ),
-                // Экрандын ортосунда документти жайгаштырууга арналган чек аймак
+
                 Center(
                   child: Container(
                     width: rectangleWidth,
@@ -237,7 +226,7 @@ class _CardDetectorScreenState extends State<CardDetectorScreen> {
                     ),
                   ),
                 ),
-                // Эгер документ туура аныкталса, экрандын аягында сүрөт тартуу кнопкасы пайда болот.
+
                 if (isCardDetected)
                   Positioned(
                     bottom: 50,
@@ -251,7 +240,7 @@ class _CardDetectorScreenState extends State<CardDetectorScreen> {
                         ),
                         backgroundColor: Colors.blue,
                       ),
-                      child: Text("Сүрөт тартуу"),
+                      child: Text("Take a photo"),
                     ),
                   ),
               ],
